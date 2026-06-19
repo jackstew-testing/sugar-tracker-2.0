@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sugar Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface2: #F4F2ED;
+    --border: #E8E4DC;
+    --text: #1A1814;
+    --text2: #6B6660;
+    --text3: #A09C96;
+    --green: #1D9E75;
+    --green-light: #E1F5EE;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --red: #C13333;
+    --red-light: #FCEBEB;
+    --accent: #7F77DD;
+    --accent-light: #EEEDFE;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16150F;
+      --surface: #1F1E17;
+      --surface2: #2A2920;
+      --border: #35342A;
+      --text: #F0EDE6;
+      --text2: #A09C96;
+      --text3: #6B6660;
+      --green: #5DCAA5;
+      --green-light: #04342C;
+      --amber: #EF9F27;
+      --amber-light: #412402;
+      --red: #F09595;
+      --red-light: #501313;
+      --accent: #AFA9EC;
+      --accent-light: #26215C;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-left h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.4px; }
+  .header-left p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .streak-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--amber-light); color: var(--amber);
+    font-size: 13px; font-weight: 600;
+    padding: 6px 12px; border-radius: 20px;
+    cursor: pointer;
+  }
+
+  /* Persona banner */
+  .persona-banner {
+    margin: 14px 20px 0;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border);
+  }
+  .persona-emoji { font-size: 24px; flex-shrink: 0; }
+  .persona-info { flex: 1; }
+  .persona-name { font-size: 14px; font-weight: 600; }
+  .persona-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .persona-gazelle { background: var(--green-light); border-color: var(--green); }
+  .persona-polly   { background: #EEF6FF; border-color: #3B82C4; }
+  .persona-suzie   { background: var(--amber-light); border-color: var(--amber); }
+  .persona-monsta  { background: var(--red-light); border-color: var(--red); }
+
+  /* Week nav */
+  .week-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 0;
+  }
+  .nav-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 14px;
+    font-size: 13px; color: var(--text2); cursor: pointer;
+    font-family: inherit;
+  }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .week-nav-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+
+  /* Week ring section */
+  .week-section {
+    padding: 16px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .ring-wrap { position: relative; flex-shrink: 0; width: 110px; height: 110px; }
+  .ring-wrap svg { width: 110px; height: 110px; transform: rotate(-90deg); }
+  .ring-center {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .ring-pts { font-size: 22px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+  .ring-sub { font-size: 10px; color: var(--text2); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .week-info { flex: 1; }
+  .week-info .wi-label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .week-info .wi-val { font-size: 15px; font-weight: 500; }
+  .week-info .wi-row { margin-bottom: 10px; }
+  .week-info .wi-row:last-child { margin-bottom: 0; }
+  .status-pill {
+    display: inline-block;
+    font-size: 12px; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .status-good { background: var(--green-light); color: var(--green); }
+  .status-warn { background: var(--amber-light); color: var(--amber); }
+  .status-over { background: var(--red-light); color: var(--red); }
+
+  /* Day bars */
+  .day-dots { padding: 0 20px 16px; }
+  .day-dots-label { font-size: 12px; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .dots-row { display: flex; gap: 6px; }
+  .dot-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .dot-bar-wrap { width: 100%; height: 48px; display: flex; align-items: flex-end; }
+  .dot-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; transition: height 0.3s; }
+  .dot-name { font-size: 10px; color: var(--text3); }
+  .dot-name.today { color: var(--text); font-weight: 600; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 0 20px; }
+
+  /* Log list */
+  .log-section { padding: 16px 20px; }
+  .log-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+  }
+  .log-header h2 { font-size: 15px; font-weight: 600; }
+  .log-header .week-tab-row { display: flex; gap: 6px; }
+  .tab-btn {
+    font-size: 12px; padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--border); background: none;
+    color: var(--text2); cursor: pointer; font-family: inherit;
+  }
+  .tab-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .treat-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .treat-item:last-child { border-bottom: none; }
+  .treat-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .treat-info { flex: 1; }
+  .treat-name-text { font-size: 14px; font-weight: 500; }
+  .treat-meta { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .treat-actions { display: flex; gap: 4px; }
+  .treat-edit, .treat-delete {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 15px; padding: 4px;
+    line-height: 1;
+  }
+  .treat-edit:hover { color: var(--accent); }
+  .treat-delete:hover { color: var(--red); }
+
+  .empty-state {
+    text-align: center; padding: 28px 0; color: var(--text2); font-size: 14px;
+  }
+
+  /* Bottom buttons */
+  .log-btn-wrap { padding: 8px 20px 10px; }
+  .log-btn {
+    width: 100%; padding: 14px;
+    background: var(--text); color: var(--bg);
+    border: none; border-radius: var(--radius);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity 0.15s;
+  }
+  .log-btn:active { opacity: 0.8; }
+  .export-btn {
+    width: 100%; padding: 12px;
+    background: none; color: var(--text2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity 0.15s; margin-top: 8px;
+  }
+  .export-btn:active { opacity: 0.6; }
+
+  /* Settings row */
+  .settings-row {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px 24px;
+  }
+  .settings-row span { font-size: 13px; color: var(--text2); }
+  .budget-edit-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 13px; color: var(--text); cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 24px 20px 36px;
+    width: 100%; max-width: 420px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .modal p { font-size: 14px; color: var(--text2); margin-bottom: 20px; }
+  .field-label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .text-input {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface2); color: var(--text);
+    font-size: 15px; font-family: inherit;
+    margin-bottom: 20px;
+    outline: none;
+  }
+  .text-input:focus { border-color: var(--accent); }
+  .datetime-input {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface2); color: var(--text);
+    font-size: 15px; font-family: inherit;
+    margin-bottom: 20px;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .datetime-input:focus { border-color: var(--accent); }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .sugar-slider {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 6px; border-radius: 3px; outline: none;
+    cursor: pointer;
+  }
+  .sugar-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--text); cursor: pointer;
+    border: 3px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .slider-val {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  .slider-hints { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 24px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .btn-cancel {
+    flex: 1; padding: 13px;
+    background: none; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 15px;
+    color: var(--text2); cursor: pointer; font-family: inherit;
+  }
+  .btn-save {
+    flex: 2; padding: 13px;
+    background: var(--text); color: var(--bg);
+    border: none; border-radius: var(--radius-sm);
+    font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+
+  /* Budget modal */
+  .budget-slider {
+    width: 100%; -webkit-appearance: none; appearance: none;
+    height: 6px; border-radius: 3px; outline: none; cursor: pointer;
+    background: var(--border); margin-bottom: 24px;
+  }
+  .budget-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--text); cursor: pointer;
+    border: 3px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .budget-display { font-size: 28px; font-weight: 700; text-align: center; margin: 12px 0 4px; }
+  .budget-hint { text-align: center; font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+
+  /* Export card (hidden, used for screenshot) */
+  #export-card {
+    position: fixed; left: -9999px; top: 0;
+    width: 360px; padding: 24px;
+    background: #FAFAF8; color: #1A1814;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    border-radius: 16px;
+  }
+  .ec-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .ec-sub { font-size: 13px; color: #6B6660; margin-bottom: 16px; }
+  .ec-stat-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .ec-stat { flex: 1; background: #F4F2ED; border-radius: 10px; padding: 12px; text-align: center; }
+  .ec-stat-val { font-size: 22px; font-weight: 700; }
+  .ec-stat-label { font-size: 11px; color: #6B6660; margin-top: 2px; }
+  .ec-bars { display: flex; gap: 6px; align-items: flex-end; height: 60px; margin-bottom: 12px; }
+  .ec-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .ec-bar-wrap { width: 100%; display: flex; align-items: flex-end; height: 48px; }
+  .ec-bar { width: 100%; border-radius: 4px 4px 0 0; }
+  .ec-bar-label { font-size: 10px; color: #A09C96; }
+  .ec-persona { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; margin-bottom: 12px; }
+  .ec-footer { font-size: 11px; color: #A09C96; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="main-content">
+  <div class="header">
+    <div class="header-left">
+      <h1>🍬 Sugar Tracker</h1>
+      <p id="week-label">Loading...</p>
+    </div>
+    <div class="streak-badge" id="streak-badge">🔥 0 weeks</div>
+  </div>
+
+  <div id="persona-area"></div>
+
+  <div class="week-nav">
+    <button class="nav-btn" id="prev-week-btn" onclick="changeWeek(-1)">← Previous</button>
+    <span class="week-nav-label" id="week-nav-label">This week</span>
+    <button class="nav-btn" id="next-week-btn" onclick="changeWeek(1)" disabled>Next →</button>
+  </div>
+
+  <div class="week-section">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 110 110">
+        <circle cx="55" cy="55" r="46" fill="none" stroke-width="10" id="ring-bg"/>
+        <circle cx="55" cy="55" r="46" fill="none" stroke-width="10"
+          stroke-linecap="round" id="ring-fill"
+          stroke-dasharray="289" stroke-dashoffset="289"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-pts" id="ring-pts">0</div>
+        <div class="ring-sub" id="ring-sub">this week</div>
+      </div>
+    </div>
+    <div class="week-info">
+      <div class="wi-row">
+        <div class="wi-label">Budget</div>
+        <div class="wi-val" id="wi-budget">50 pts / week</div>
+      </div>
+      <div class="wi-row">
+        <div class="wi-label" id="wi-remaining-label">Remaining</div>
+        <div class="wi-val" id="wi-remaining">50 pts left</div>
+      </div>
+      <div class="wi-row">
+        <span class="status-pill status-good" id="wi-status">All good</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="day-dots">
+    <div class="day-dots-label" id="day-dots-label">This week</div>
+    <div class="dots-row" id="dots-row"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="log-section">
+    <div class="log-header">
+      <h2>Treats</h2>
+      <div class="week-tab-row">
+        <button class="tab-btn active" id="tab-today" onclick="setTab('today')">Today</button>
+        <button class="tab-btn" id="tab-week" onclick="setTab('week')">This week</button>
+      </div>
+    </div>
+    <div id="treat-list"></div>
+  </div>
+
+  <div class="log-btn-wrap" id="log-btn-area">
+    <button class="log-btn" onclick="openLogModal()">＋ Log a treat</button>
+    <button class="export-btn" onclick="exportJpeg()">↓ Save week as image</button>
+  </div>
+
+  <div class="settings-row">
+    <span>Weekly budget:</span>
+    <button class="budget-edit-btn" id="budget-btn" onclick="openBudgetModal()">50 pts</button>
+  </div>
+</div>
+
+<!-- Log / Edit treat modal -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal">
+    <h2 id="log-modal-title">Log a treat</h2>
+    <p id="log-modal-desc">What did you have?</p>
+    <div class="field-label">Name (optional)</div>
+    <input class="text-input" type="text" id="treat-name-input" placeholder="e.g. Chocolate cake, biscuit…">
+    <div class="field-label">Date &amp; time</div>
+    <input class="datetime-input" type="datetime-local" id="treat-datetime-input">
+    <div class="field-label">Sugar level</div>
+    <div class="slider-row">
+      <input class="sugar-slider" type="range" min="1" max="10" step="0.5" value="5" id="sugar-slider">
+      <div class="slider-val" id="slider-val-display">5</div>
+    </div>
+    <div class="slider-hints">
+      <span>1 — piece of fruit</span>
+      <span>10 — big dessert</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeLogModal()">Cancel</button>
+      <button class="btn-save" onclick="saveLog()">Add treat</button>
+    </div>
+  </div>
+</div>
+
+<!-- Budget modal -->
+<div class="modal-overlay" id="budget-modal">
+  <div class="modal">
+    <h2>Weekly budget</h2>
+    <p>Set your weekly sugar points limit. Sunday treats count toward this.</p>
+    <div class="budget-display" id="budget-display">50 pts</div>
+    <div class="budget-hint" id="budget-hint">Roughly 7 pts/day average</div>
+    <input class="budget-slider" type="range" min="20" max="100" step="5" value="50" id="budget-slider">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeBudgetModal()">Cancel</button>
+      <button class="btn-save" onclick="saveBudget()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden export card -->
+<div id="export-card"></div>
+
+<script>
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// ── Personas ──────────────────────────────────────────────────────────────────
+const PERSONAS = [
+  { key:'gazelle', emoji:'🦌', name:'Guilt-Free Gazelle',  desc:'Graceful and in control. Your 3-week average is on point!', cls:'persona-gazelle', maxPct: 0.55 },
+  { key:'polly',   emoji:'😊', name:'Proud Polly',          desc:'Doing well! Small treats here and there, mostly behaving.', cls:'persona-polly',   maxPct: 0.75 },
+  { key:'suzie',   emoji:'😬', name:'Stumbling Suzie',      desc:'Getting a bit wobbly. A few too many treats lately…',      cls:'persona-suzie',   maxPct: 0.95 },
+  { key:'monsta',  emoji:'🍰', name:'Sugar Monsta',         desc:'Sweet tooth is in full control. Time to rein it in!',      cls:'persona-monsta',  maxPct: 99   },
+];
+
+function getPersona(avg3WeekPct) {
+  return PERSONAS.find(p => avg3WeekPct <= p.maxPct) || PERSONAS[PERSONAS.length - 1];
+}
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function getStorage() {
+  try {
+    const d = localStorage.getItem('sugar_tracker_v2');
+    return d ? JSON.parse(d) : { budget: 50, logs: [], streak: 0, lastWeekKey: null };
+  } catch { return { budget: 50, logs: [], streak: 0, lastWeekKey: null }; }
+}
+function setStorage(data) {
+  try { localStorage.setItem('sugar_tracker_v2', JSON.stringify(data)); } catch {}
+}
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function getWeekKey(date) {
+  const d = new Date(date);
+  const sunday = new Date(d); sunday.setDate(d.getDate() - d.getDay());
+  return sunday.toISOString().slice(0, 10);
+}
+function getWeekRangeFor(offsetWeeks) {
+  const now = new Date();
+  const sunday = new Date(now); sunday.setDate(now.getDate() - now.getDay() + offsetWeeks * 7);
+  const saturday = new Date(sunday); saturday.setDate(sunday.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return { label: `${fmt(sunday)} – ${fmt(saturday)}`, sunday, saturday };
+}
+function getTodayKey() { return new Date().toISOString().slice(0, 10); }
+function toLocalDatetimeValue(date) {
+  const d = new Date(date);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// ── Colour helpers ────────────────────────────────────────────────────────────
+function scoreColor(s) {
+  if (s <= 3) return { bg: '#E1F5EE', color: '#085041' };
+  if (s <= 6) return { bg: '#FAEEDA', color: '#633806' };
+  return { bg: '#FCEBEB', color: '#993535' };
+}
+function barColor(pct) {
+  if (pct < 0.6) return '#1D9E75';
+  if (pct < 0.9) return '#BA7517';
+  return '#C13333';
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentTab = 'today';
+let weekOffset = 0; // 0 = this week, -1 = last week, etc.
+let editingId = null;
+
+function setTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-today').classList.toggle('active', tab === 'today');
+  document.getElementById('tab-week').classList.toggle('active', tab === 'week');
+  renderList();
+}
+
+function changeWeek(dir) {
+  weekOffset += dir;
+  if (weekOffset > 0) weekOffset = 0;
+  render();
+}
+
+// ── Main render ───────────────────────────────────────────────────────────────
+function render() {
+  const data = getStorage();
+  const isCurrentWeek = weekOffset === 0;
+  const { sunday, saturday, label } = getWeekRangeFor(weekOffset);
+  const viewWeekKey = getWeekKey(sunday);
+  const todayKey = getTodayKey();
+
+  if (isCurrentWeek) checkStreak(data, viewWeekKey);
+
+  const weekLogs = data.logs.filter(l => getWeekKey(l.ts) === viewWeekKey);
+  const weekTotal = weekLogs.reduce((a, l) => a + l.score, 0);
+  const remaining = data.budget - weekTotal;
+  const pct = Math.min(weekTotal / data.budget, 1);
+  const circumference = 289;
+
+  // Week nav
+  document.getElementById('week-label').textContent = label;
+  document.getElementById('week-nav-label').textContent = isCurrentWeek ? 'This week' : label;
+  document.getElementById('next-week-btn').disabled = isCurrentWeek;
+  document.getElementById('day-dots-label').textContent = isCurrentWeek ? 'This week' : 'That week';
+
+  // Show/hide log button for past weeks
+  document.getElementById('log-btn-area').style.display = isCurrentWeek ? 'block' : 'none';
+  // Today tab only makes sense on current week
+  document.getElementById('tab-today').style.display = isCurrentWeek ? '' : 'none';
+  if (!isCurrentWeek && currentTab === 'today') { currentTab = 'week'; }
+  document.getElementById('tab-today').classList.toggle('active', currentTab === 'today');
+  document.getElementById('tab-week').classList.toggle('active', currentTab === 'week');
+
+  // Ring
+  const ringFill = document.getElementById('ring-fill');
+  const ringBg = document.getElementById('ring-bg');
+  const c = barColor(pct);
+  ringBg.setAttribute('stroke', '#E8E4DC');
+  ringFill.setAttribute('stroke', c);
+  ringFill.setAttribute('stroke-dashoffset', circumference - pct * circumference);
+  document.getElementById('ring-pts').textContent = Math.round(weekTotal * 10) / 10;
+  document.getElementById('ring-sub').textContent = isCurrentWeek ? 'this week' : 'that week';
+
+  document.getElementById('wi-budget').textContent = data.budget + ' pts / week';
+  const remLabel = document.getElementById('wi-remaining-label');
+  const remVal = document.getElementById('wi-remaining');
+  if (isCurrentWeek) {
+    remLabel.textContent = 'Remaining';
+    remVal.textContent = (remaining >= 0 ? remaining.toFixed(1) : '0') + ' pts left';
+  } else {
+    remLabel.textContent = 'Total spent';
+    remVal.textContent = weekTotal.toFixed(1) + ' pts';
+  }
+  document.getElementById('budget-btn').textContent = data.budget + ' pts';
+
+  const statusEl = document.getElementById('wi-status');
+  if (pct >= 1) { statusEl.textContent = 'Over budget'; statusEl.className = 'status-pill status-over'; }
+  else if (pct >= 0.8) { statusEl.textContent = 'Getting close'; statusEl.className = 'status-pill status-warn'; }
+  else { statusEl.textContent = 'All good'; statusEl.className = 'status-pill status-good'; }
+
+  // Streak
+  document.getElementById('streak-badge').textContent = '🔥 ' + data.streak + (data.streak === 1 ? ' week' : ' weeks');
+
+  // Persona (3-week average, only on current week view)
+  const personaArea = document.getElementById('persona-area');
+  if (isCurrentWeek) {
+    let totalPts = 0, weekCount = 0;
+    for (let w = 0; w >= -2; w--) {
+      const { sunday: ws } = getWeekRangeFor(w);
+      const wk = getWeekKey(ws);
+      const wLogs = data.logs.filter(l => getWeekKey(l.ts) === wk);
+      if (wLogs.length > 0 || w === 0) {
+        totalPts += wLogs.reduce((a, l) => a + l.score, 0);
+        weekCount++;
+      }
+    }
+    const avgPct = weekCount > 0 ? (totalPts / weekCount) / data.budget : 0;
+    const p = getPersona(avgPct);
+    personaArea.innerHTML = `<div class="persona-banner ${p.cls}">
+      <div class="persona-emoji">${p.emoji}</div>
+      <div class="persona-info">
+        <div class="persona-name">${p.name}</div>
+        <div class="persona-desc">${p.desc}</div>
+      </div>
+    </div>`;
+  } else {
+    personaArea.innerHTML = '';
+  }
+
+  // Day bars
+  const dotsRow = document.getElementById('dots-row');
+  dotsRow.innerHTML = '';
+  const now = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sunday); d.setDate(sunday.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const dayLogs = data.logs.filter(l => l.ts.slice(0, 10) === key);
+    const dayTotal = dayLogs.reduce((a, l) => a + l.score, 0);
+    const dailyShare = data.budget / 7;
+    const relH = Math.min(dayTotal / (data.budget * 0.5), 1);
+    const isToday = key === todayKey;
+    const isFuture = d > now;
+
+    const col = document.createElement('div'); col.className = 'dot-col';
+    const bw = document.createElement('div'); bw.className = 'dot-bar-wrap';
+    if (!isFuture && dayTotal > 0) {
+      const bar = document.createElement('div'); bar.className = 'dot-bar';
+      bar.style.height = Math.max(relH * 100, 8) + '%';
+      bar.style.background = barColor(dayTotal / (dailyShare * 1.5));
+      bar.style.opacity = isToday ? '1' : '0.75';
+      bw.appendChild(bar);
+    } else if (isFuture) {
+      const bar = document.createElement('div'); bar.className = 'dot-bar';
+      bar.style.height = '5px'; bar.style.background = 'var(--border)';
+      bw.appendChild(bar);
+    }
+    const label2 = document.createElement('div');
+    label2.className = 'dot-name' + (isToday ? ' today' : '');
+    label2.textContent = DAYS[i];
+    col.appendChild(bw); col.appendChild(label2);
+    dotsRow.appendChild(col);
+  }
+
+  renderList();
+}
+
+// ── Treat list ────────────────────────────────────────────────────────────────
+function renderList() {
+  const data = getStorage();
+  const { sunday } = getWeekRangeFor(weekOffset);
+  const viewWeekKey = getWeekKey(sunday);
+  const todayKey = getTodayKey();
+  const isCurrentWeek = weekOffset === 0;
+
+  let logs;
+  if (currentTab === 'today' && isCurrentWeek) {
+    logs = data.logs.filter(l => l.ts.slice(0, 10) === todayKey);
+  } else {
+    logs = data.logs.filter(l => getWeekKey(l.ts) === viewWeekKey);
+  }
+  logs = [...logs].reverse();
+
+  const list = document.getElementById('treat-list');
+  if (logs.length === 0) {
+    list.innerHTML = '<div class="empty-state">No treats logged ' + (currentTab === 'today' && isCurrentWeek ? 'today' : 'this week') + '.</div>';
+    return;
+  }
+
+  list.innerHTML = logs.map(log => {
+    const c = scoreColor(log.score);
+    const d = new Date(log.ts);
+    const timeStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
+      ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const canEdit = isCurrentWeek;
+    return `<div class="treat-item">
+      <div class="treat-dot" style="background:${c.bg};color:${c.color}">${log.score}</div>
+      <div class="treat-info">
+        <div class="treat-name-text">${log.name || 'Treat'}</div>
+        <div class="treat-meta">${timeStr}</div>
+      </div>
+      <div class="treat-actions">
+        ${canEdit ? `<button class="treat-edit" onclick="openEditModal('${log.id}')" title="Edit">✎</button>` : ''}
+        <button class="treat-delete" onclick="deleteTreat('${log.id}')" title="Remove">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteTreat(id) {
+  const data = getStorage();
+  data.logs = data.logs.filter(l => l.id !== id);
+  setStorage(data);
+  render();
+}
+
+// ── Streak ────────────────────────────────────────────────────────────────────
+function checkStreak(data, weekKey) {
+  const prev = new Date(); prev.setDate(prev.getDate() - 7);
+  const prevKey = getWeekKey(prev);
+  const prevLogs = data.logs.filter(l => getWeekKey(l.ts) === prevKey);
+  const prevTotal = prevLogs.reduce((a, l) => a + l.score, 0);
+  if (data.lastWeekKey !== prevKey) {
+    if (data.lastWeekKey !== null) {
+      data.streak = prevTotal <= data.budget ? (data.streak || 0) + 1 : 0;
+    }
+    data.lastWeekKey = prevKey;
+    setStorage(data);
+  }
+}
+
+// ── Log modal ─────────────────────────────────────────────────────────────────
+function openLogModal() {
+  editingId = null;
+  document.getElementById('log-modal-title').textContent = 'Log a treat';
+  document.getElementById('log-modal-desc').textContent = 'What did you have?';
+  document.getElementById('treat-name-input').value = '';
+  document.getElementById('treat-datetime-input').value = toLocalDatetimeValue(new Date());
+  document.getElementById('sugar-slider').value = 5;
+  document.getElementById('log-modal').querySelector('.btn-save').textContent = 'Add treat';
+  updateSliderDisplay(5);
+  document.getElementById('log-modal').classList.add('open');
+  document.getElementById('treat-name-input').focus();
+}
+
+function openEditModal(id) {
+  const data = getStorage();
+  const log = data.logs.find(l => l.id === id);
+  if (!log) return;
+  editingId = id;
+  document.getElementById('log-modal-title').textContent = 'Edit treat';
+  document.getElementById('log-modal-desc').textContent = 'Update the details below.';
+  document.getElementById('treat-name-input').value = log.name || '';
+  document.getElementById('treat-datetime-input').value = toLocalDatetimeValue(log.ts);
+  document.getElementById('sugar-slider').value = log.score;
+  document.getElementById('log-modal').querySelector('.btn-save').textContent = 'Save changes';
+  updateSliderDisplay(log.score);
+  document.getElementById('log-modal').classList.add('open');
+}
+
+function closeLogModal() { document.getElementById('log-modal').classList.remove('open'); editingId = null; }
+
+function saveLog() {
+  const name = document.getElementById('treat-name-input').value.trim();
+  const score = parseFloat(document.getElementById('sugar-slider').value);
+  const dtVal = document.getElementById('treat-datetime-input').value;
+  const ts = dtVal ? new Date(dtVal).toISOString() : new Date().toISOString();
+  const data = getStorage();
+  if (editingId) {
+    const idx = data.logs.findIndex(l => l.id === editingId);
+    if (idx > -1) { data.logs[idx].name = name; data.logs[idx].score = score; data.logs[idx].ts = ts; }
+  } else {
+    data.logs.push({ id: Date.now().toString(), name, score, ts });
+  }
+  setStorage(data);
+  closeLogModal();
+  render();
+}
+
+function updateSliderDisplay(v) {
+  const c = scoreColor(v);
+  const el = document.getElementById('slider-val-display');
+  el.textContent = v;
+  el.style.background = c.bg;
+  el.style.color = c.color;
+  const slider = document.getElementById('sugar-slider');
+  const pct = (v - 1) / 9;
+  slider.style.background = `linear-gradient(to right, ${c.color} 0%, ${c.color} ${pct*100}%, var(--border) ${pct*100}%, var(--border) 100%)`;
+}
+document.getElementById('sugar-slider').addEventListener('input', e => updateSliderDisplay(parseFloat(e.target.value)));
+
+// ── Budget modal ──────────────────────────────────────────────────────────────
+function openBudgetModal() {
+  const data = getStorage();
+  document.getElementById('budget-slider').value = data.budget;
+  updateBudgetDisplay(data.budget);
+  document.getElementById('budget-modal').classList.add('open');
+}
+function closeBudgetModal() { document.getElementById('budget-modal').classList.remove('open'); }
+function saveBudget() {
+  const val = parseInt(document.getElementById('budget-slider').value);
+  const data = getStorage(); data.budget = val; setStorage(data);
+  closeBudgetModal(); render();
+}
+function updateBudgetDisplay(v) {
+  document.getElementById('budget-display').textContent = v + ' pts';
+  document.getElementById('budget-hint').textContent = 'Roughly ' + Math.round(v/7) + ' pts/day average';
+}
+document.getElementById('budget-slider').addEventListener('input', e => updateBudgetDisplay(parseInt(e.target.value)));
+
+// ── Export JPEG ───────────────────────────────────────────────────────────────
+function exportJpeg() {
+  const data = getStorage();
+  const { sunday, label } = getWeekRangeFor(weekOffset);
+  const viewWeekKey = getWeekKey(sunday);
+  const weekLogs = data.logs.filter(l => getWeekKey(l.ts) === viewWeekKey);
+  const weekTotal = weekLogs.reduce((a, l) => a + l.score, 0);
+  const pct = Math.min(weekTotal / data.budget, 1);
+
+  // Persona
+  let totalPts = 0, weekCount = 0;
+  for (let w = 0; w >= -2; w--) {
+    const { sunday: ws } = getWeekRangeFor(w);
+    const wk = getWeekKey(ws);
+    const wLogs = data.logs.filter(l => getWeekKey(l.ts) === wk);
+    if (wLogs.length > 0 || w === 0) { totalPts += wLogs.reduce((a,l)=>a+l.score,0); weekCount++; }
+  }
+  const avgPct = weekCount > 0 ? (totalPts / weekCount) / data.budget : 0;
+  const persona = getPersona(avgPct);
+
+  // Build bars HTML
+  let barsHtml = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sunday); d.setDate(sunday.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const dayLogs = data.logs.filter(l => l.ts.slice(0,10) === key);
+    const dayTotal = dayLogs.reduce((a,l)=>a+l.score,0);
+    const relH = Math.min(dayTotal / (data.budget * 0.5), 1);
+    const bc = dayTotal > 0 ? barColor(dayTotal / (data.budget/7*1.5)) : '#E8E4DC';
+    const h = dayTotal > 0 ? Math.max(relH*48,4) : 4;
+    barsHtml += `<div class="ec-bar-col">
+      <div class="ec-bar-wrap"><div class="ec-bar" style="height:${h}px;background:${bc};width:100%"></div></div>
+      <div class="ec-bar-label">${DAYS[i]}</div>
+    </div>`;
+  }
+
+  const personaBg = { gazelle:'#E1F5EE', polly:'#EEF6FF', suzie:'#FAEEDA', monsta:'#FCEBEB' }[persona.key];
+
+  const card = document.getElementById('export-card');
+  card.innerHTML = `
+    <div class="ec-title">🍬 Sugar Tracker</div>
+    <div class="ec-sub">${label} · Budget: ${data.budget} pts</div>
+    <div class="ec-stat-row">
+      <div class="ec-stat"><div class="ec-stat-val">${weekTotal.toFixed(1)}</div><div class="ec-stat-label">pts this week</div></div>
+      <div class="ec-stat"><div class="ec-stat-val">${Math.max(0,(data.budget-weekTotal).toFixed(1))}</div><div class="ec-stat-label">pts remaining</div></div>
+      <div class="ec-stat"><div class="ec-stat-val">🔥${data.streak}</div><div class="ec-stat-label">week streak</div></div>
+    </div>
+    <div class="ec-bars">${barsHtml}</div>
+    <div class="ec-persona" style="background:${personaBg}">
+      <span style="font-size:22px">${persona.emoji}</span>
+      <div><div style="font-size:13px;font-weight:600">${persona.name}</div><div style="font-size:11px;color:#6B6660">${persona.desc}</div></div>
+    </div>
+    <div class="ec-footer">jackstew-testing.github.io/sugar-tracker-2.0</div>
+  `;
+  card.style.left = '-9999px';
+
+  html2canvas(card, { backgroundColor: '#FAFAF8', scale: 2 }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'sugar-tracker-' + label.replace(/\s/g,'-') + '.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.92);
+    link.click();
+    card.innerHTML = '';
+  });
+}
+
+// ── Close modals on backdrop click ────────────────────────────────────────────
+document.getElementById('log-modal').addEventListener('click', e => { if (e.target === document.getElementById('log-modal')) closeLogModal(); });
+document.getElementById('budget-modal').addEventListener('click', e => { if (e.target === document.getElementById('budget-modal')) closeBudgetModal(); });
+
+// ── Go ────────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
